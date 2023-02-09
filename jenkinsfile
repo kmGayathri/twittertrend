@@ -1,48 +1,48 @@
-pipeline{
+pipeline {
     agent{
-        node{
-            label "slave"
-        }
+     node{
+        label "Jenkins _Slave"
+     }
     }
     environment {
-            PATH = "/opt/apache-maven-3.8.7/bin:$PATH"
+        PATH = "/opt/apache-maven-3.8.7/bin:$PATH"
     }
     stages{
-        stage ("Clone the code"){
+            stage ("Clone the code"){
             steps{
                 git branch: 'main', url: 'https://github.com/kmGayathri/twittertrend.git'
             }
         }
-        stage ("Build the code"){
+        stage("build code"){
             steps{
                 sh 'mvn clean install'
             }
+      }
+      stage("Sonarqube Analysis"){
+        environment{
+            scannerHome = tool 'Java_Sonarqube_Scanner'
         }
-        stage ("SonarQube Analysis"){
-            environment {
-                scannerHome = tool 'Java_Sonarqube_Scanner'
-            steps{
-                withSonarQubeEnv('Java_Sonarqube_Server'){
-                      sh "${scannerHome}/bin/sonar-scanner"
-            
-                }
-
-            }
-        
+        steps {
+                echo '<--------------- Sonar Analysis started  --------------->'
+                withSonarQubeEnv('Java_Sonarqube_Server') {    
+                    sh "${scannerHome}/bin/sonar-scanner"
+                echo '<--------------- Sonar Analysis stopped  --------------->'
+                } 
         }
-        stage ("Quality Gate"){
+      } 
+      }
+    }
+stage("Quality Gate") {
             steps {
                 script {
+                  echo '<--------------- Sonar Gate Analysis Started --------------->'
                     timeout(time: 1, unit: 'HOURS'){
-                        def qg = waitForQualityGate()
+                       def qg = waitForQualityGate()
                         if(qg.status !='OK') {
                             error "Pipeline failed due to quality gate failures: ${qg.status}"
                         }
-                    }
+                    }  
+                  echo '<--------------- Sonar Gate Analysis Ends  --------------->'
                 }
             }
         }
-
-    }
-}
-}
