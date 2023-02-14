@@ -1,25 +1,25 @@
 def registry = 'https://kmgayathri.jfrog.io'
-pipeline{
-    agent{
-        node{
+pipeline {
+    agent {
+        node {
             label "slave"
         }
     }
     environment {
             PATH = "/opt/apache-maven-3.8.7/bin:$PATH"
     }
-    stages{
-        stage ("Clone the code"){
-            steps{
+    stages {
+        stage ("Clone the code") {
+            steps {
                 git branch: 'main', url: 'https://github.com/kmGayathri/twittertrend.git'
             }
         }
-        stage ("Build the code"){
-            steps{
+        stage ("Build the code") {
+            steps {
                 sh 'mvn clean install'
             }
         }
-        stage ("SonarQube Analysis"){
+        stage ("SonarQube Analysis") {
             environment {
                 scannerHome = tool 'Java_Sonarqube_Scanner'
             }
@@ -29,12 +29,12 @@ pipeline{
                 }
             } 
         }
-         stage("Quality Gate"){  
+         stage("Quality Gate") {  
           steps {  
                script {  
                      timeout(time: 1, unit: 'HOURS'){  
                         def qg = waitForQualityGate()   
-                        if(qg.status !='OK'){   
+                        if(qg.status !='OK') {   
                            error "Pipeline failed due to quality gate failures: ${qg.status}"  
                        }  
                    }   
@@ -60,11 +60,10 @@ pipeline{
                      def buildInfo = server.upload(uploadSpec)
                      buildInfo.env.collect()
                      server.publishBuildInfo(buildInfo)  
-            
-            }
-        }   
+                    }
+                }   
+           }   
+       }
     }   
-    }
-}
 
         
