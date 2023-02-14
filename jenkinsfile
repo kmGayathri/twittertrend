@@ -29,7 +29,19 @@ pipeline{
                 }
             } 
         }
-           stage("Jar Publish") {
+         stage("Quality Gate"){  
+          steps {  
+               script {  
+                     timeout(time: 1, unit: 'HOURS'){  
+                        def qg = waitForQualityGate()   
+                        if(qg.status !='OK'){   
+                           error "Pipeline failed due to quality gate failures: ${qg.status}"  
+                       }  
+                   }   
+                }   
+            }   
+        } 
+            stage("Jar Publish") {
                 steps {
                  script {
                      def server = Artifactory.newServer url:registry+"/artifactory" ,  credentialsId:"jJfrog-for-jenkins"
@@ -47,7 +59,8 @@ pipeline{
                      }"""
                      def buildInfo = server.upload(uploadSpec)
                      buildInfo.env.collect()
-                     server.publishBuildInfo(buildInfo)     
+                     server.publishBuildInfo(buildInfo)  
+            
             }
         }   
     }   
