@@ -32,7 +32,7 @@ pipeline {
            stage("Jar Publish") {
                 steps {
                  script {
-                     def server = Artifactory.newServer url:registry+"/artifactory" ,  credentialsId:"jJfrog-for-jenkins"
+                     def server = Artifactory.newServer url:registry+"/artifactory" ,  credentialsId:"Jfrog-for-jenkins"
                      def properties = "buildid=${env.BUILD_ID},commitid=${GIT_COMMIT}";
                      def uploadSpec = """{
                           "files": [
