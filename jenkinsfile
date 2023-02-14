@@ -1,3 +1,4 @@
+def registry = 'https://kmgayathri.jfrog.io'
 pipeline{
     agent{
         node{
@@ -22,27 +23,48 @@ pipeline{
             environment {
                 scannerHome = tool 'Java_Sonarqube_Scanner'
             }
-            steps{
-                withSonarQubeEnv('Java_Sonarqube_Server'){
-                      sh "${scannerHome}/bin/sonar-scanner"
-            
-                }
-
-            }
-        
-        }
-        stage ("Quality Gate"){
             steps {
-                script {
-                    timeout(time: 1, unit: 'HOURS'){
-                        def qg = waitForQualityGate()
-                        if(qg.status !='OK') {
-                            error "Pipeline failed due to quality gate failures: ${qg.status}"
-                        }
-                    }
+                withSonarQubeEnv('Java_Sonarqube_Server') {
+                      sh "${scannerHome}/bin/sonar-scanner"
                 }
-            }
+            } 
         }
-
+         stage("Quality Gate"){  
+          steps {  
+               script {  
+                     timeout(time: 1, unit: 'HOURS'){  
+                        def qg = waitForQualityGate()   
+                        if(qg.status !='OK'){   
+                           error "Pipeline failed due to quality gate failures: ${qg.status}"  
+                       }  
+                   }   
+                }   
+            }   
+        } 
+            stage("Jar Publish") {
+                steps {
+                 script {
+                     def server = Artifactory.newServer url:registry+"/artifactory" ,  credentialsId:"jJfrog-for-jenkins"
+                     def properties = "buildid=${env.BUILD_ID},commitid=${GIT_COMMIT}";
+                     def uploadSpec = """{
+                          "files": [
+                            {
+                              "pattern": "jarstaging/(*)",
+                              "target": "twittertrend-libs-release-local/{1}",
+                              "flat": "false",
+                              "props" : "${properties}",
+                              "exclusions": [ "*.sha1", "*.md5"]
+                            }
+                         ]
+                     }"""
+                     def buildInfo = server.upload(uploadSpec)
+                     buildInfo.env.collect()
+                     server.publishBuildInfo(buildInfo)  
+            
+            }
+        }   
+    }   
     }
 }
+
+        
