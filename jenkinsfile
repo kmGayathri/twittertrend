@@ -1,5 +1,4 @@
-def registry = 'https://kmgayathri.jfrog.io'
-def imageName = 'https://kmgayathri.jfrog.io/ttrenddocker/docker file'
+def imageName = 'https://kmgayathri.jfrog.io/ttrenddocker-docker-local/ttrend'
    def version   = '2.0.2'
 pipeline {
     agent {
@@ -21,52 +20,18 @@ pipeline {
                 sh 'mvn clean install'
             }
         }
-        stage ("SonarQube Analysis") {
-            environment {
-                scannerHome = tool 'Java_Sonarqube_Scanner'
-            }
-            steps {
-                withSonarQubeEnv('Java_Sonarqube_Server') {
-                      sh "${scannerHome}/bin/sonar-scanner"
-                }
-            } 
-        }
-        stage("Jar Publish") {
-                steps {
-                 script {
-                     def server = Artifactory.newServer url:registry+"/artifactory" ,  credentialsId:"Jfrog-for-jenkins"
-                     def properties = "buildid=${env.BUILD_ID},commitid=${GIT_COMMIT}";
-                     def uploadSpec = """{
-                          "files": [
-                            {
-                              "pattern": "jarstaging/(*)",
-                              "target": "twittertrend-libs-release-local/{1}",
-                              "flat": "false",
-                              "props" : "${properties}",
-                              "exclusions": [ "*.sha1", "*.md5"]
-                            }
-                         ]
-                     }"""
-                     def buildInfo = server.upload(uploadSpec)
-                     buildInfo.env.collect()
-                     server.publishBuildInfo(buildInfo)  
-                    }
-                }   
-           } 
-           
-            stage(" Docker Build ") {
+        
+         stage(" Docker Build ") {
              steps {
             script {
                
                app = docker.build(imageName+":"+version)
-               
         }
       }
     }
-
-            stage (" Docker Publish "){
+          stage (" Docker Publish "){
             steps {
-            script {
+             script {
               
                 docker.withRegistry(registry, 'Jfrog-for-jenkins'){
                     app.push()
@@ -78,6 +43,5 @@ pipeline {
            
        }
     }   
-
 
         
